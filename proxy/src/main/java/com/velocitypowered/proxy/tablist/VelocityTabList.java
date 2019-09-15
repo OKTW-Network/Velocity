@@ -7,7 +7,6 @@ import com.velocitypowered.api.util.GameProfile;
 import com.velocitypowered.proxy.connection.MinecraftConnection;
 import com.velocitypowered.proxy.protocol.packet.HeaderAndFooter;
 import com.velocitypowered.proxy.protocol.packet.PlayerListItem;
-import com.velocitypowered.proxy.protocol.packet.PlayerListItem.Item;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,12 +31,12 @@ public class VelocityTabList implements TabList {
   public void setHeaderAndFooter(Component header, Component footer) {
     Preconditions.checkNotNull(header, "header");
     Preconditions.checkNotNull(footer, "footer");
-    connection.write(HeaderAndFooter.create(header, footer));
+    connection.writeImmediately(HeaderAndFooter.create(header, footer));
   }
 
   @Override
   public void clearHeaderAndFooter() {
-    connection.write(HeaderAndFooter.reset());
+    connection.writeImmediately(HeaderAndFooter.reset());
   }
 
   @Override
@@ -51,7 +50,7 @@ public class VelocityTabList implements TabList {
         "Not a Velocity tab list entry");
 
     PlayerListItem.Item packetItem = PlayerListItem.Item.from(entry);
-    connection.write(
+    connection.writeImmediately(
         new PlayerListItem(PlayerListItem.ADD_PLAYER, Collections.singletonList(packetItem)));
     entries.put(entry.getProfile().getId(), (VelocityTabListEntry) entry);
   }
@@ -63,7 +62,7 @@ public class VelocityTabList implements TabList {
     TabListEntry entry = entries.remove(uuid);
     if (entry != null) {
       PlayerListItem.Item packetItem = PlayerListItem.Item.from(entry);
-      connection.write(
+      connection.writeImmediately(
           new PlayerListItem(PlayerListItem.REMOVE_PLAYER, Collections.singletonList(packetItem)));
     }
 
@@ -169,7 +168,7 @@ public class VelocityTabList implements TabList {
   void updateEntry(int action, TabListEntry entry) {
     if (entries.containsKey(entry.getProfile().getId())) {
       PlayerListItem.Item packetItem = PlayerListItem.Item.from(entry);
-      connection.write(new PlayerListItem(action, Collections.singletonList(packetItem)));
+      connection.writeImmediately(new PlayerListItem(action, Collections.singletonList(packetItem)));
     }
   }
 }

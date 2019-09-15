@@ -52,6 +52,11 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
+  public void readCompleted() {
+    this.playerConnection.flush();
+  }
+
+  @Override
   public boolean beforeHandle() {
     if (!serverConn.isActive()) {
       // Obsolete connection
@@ -91,7 +96,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
       return true;
     }
 
-    // We need to specially handle REGISTER and UNREGISTER packets. Later on, we'll write them to
+    // We need to specially handle REGISTER and UNREGISTER packets. Later on, we'll delayedWrite them to
     // the client.
     if (PluginMessageUtil.isRegister(packet)) {
       serverConn.getPlayer().getKnownChannels().addAll(PluginMessageUtil.getChannels(packet));
@@ -104,7 +109,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
     if (PluginMessageUtil.isMcBrand(packet)) {
       PluginMessage rewritten = PluginMessageUtil.rewriteMinecraftBrand(packet, server.getVersion(),
           playerConnection.getProtocolVersion());
-      playerConnection.write(rewritten);
+      playerConnection.delayedWrite(rewritten);
       return true;
     }
 
@@ -126,7 +131,7 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
           if (pme.getResult().isAllowed() && !playerConnection.isClosed()) {
             PluginMessage copied = new PluginMessage(packet.getChannel(),
                 Unpooled.wrappedBuffer(copy));
-            playerConnection.write(copied);
+            playerConnection.writeImmediately(copied);
           }
         }, playerConnection.eventLoop());
     return true;
@@ -168,12 +173,12 @@ public class BackendPlaySessionHandler implements MinecraftSessionHandler {
     if (packet instanceof PluginMessage) {
       ((PluginMessage) packet).retain();
     }
-    playerConnection.write(packet);
+    playerConnection.delayedWrite(packet);
   }
 
   @Override
   public void handleUnknown(ByteBuf buf) {
-    playerConnection.write(buf.retain());
+    playerConnection.delayedWrite(buf.retain());
   }
 
   @Override

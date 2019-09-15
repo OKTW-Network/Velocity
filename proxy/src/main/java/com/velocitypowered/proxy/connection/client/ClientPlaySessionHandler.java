@@ -78,7 +78,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
         .getProtocolVersion());
     if (!channels.isEmpty()) {
       PluginMessage register = constructChannelsPacket(player.getProtocolVersion(), channels);
-      player.getConnection().write(register);
+      player.getConnection().writeImmediately(register);
       player.getKnownChannels().addAll(channels);
     }
   }
@@ -91,13 +91,24 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
   }
 
   @Override
+  public void readCompleted() {
+    VelocityServerConnection serverConnection = player.getConnectedServer();
+    if (serverConnection != null) {
+      MinecraftConnection smc = serverConnection.getConnection();
+      if (smc != null) {
+        smc.flush();
+      }
+    }
+  }
+
+  @Override
   public boolean handle(KeepAlive packet) {
     VelocityServerConnection serverConnection = player.getConnectedServer();
     if (serverConnection != null && packet.getRandomId() == serverConnection.getLastPingId()) {
       MinecraftConnection smc = serverConnection.getConnection();
       if (smc != null) {
         player.setPing(System.currentTimeMillis() - serverConnection.getLastPingSent());
-        smc.write(packet);
+        smc.delayedWrite(packet);
         serverConnection.resetLastPingId();
       }
     }
@@ -142,9 +153,9 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
             if (chatResult.isAllowed()) {
               Optional<String> eventMsg = pme.getResult().getMessage();
               if (eventMsg.isPresent()) {
-                smc.write(Chat.createServerbound(eventMsg.get()));
+                smc.writeImmediately(Chat.createServerbound(eventMsg.get()));
               } else {
-                smc.write(packet);
+                smc.writeImmediately(packet);
               }
             }
           }, smc.eventLoop());
@@ -173,12 +184,12 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
             + "ready. Channel: {}. Packet discarded.", packet.getChannel());
       } else if (PluginMessageUtil.isRegister(packet)) {
         player.getKnownChannels().addAll(PluginMessageUtil.getChannels(packet));
-        backendConn.write(packet.retain());
+        backendConn.delayedWrite(packet.retain());
       } else if (PluginMessageUtil.isUnregister(packet)) {
         player.getKnownChannels().removeAll(PluginMessageUtil.getChannels(packet));
-        backendConn.write(packet.retain());
+        backendConn.delayedWrite(packet.retain());
       } else if (PluginMessageUtil.isMcBrand(packet)) {
-        backendConn.write(PluginMessageUtil
+        backendConn.delayedWrite(PluginMessageUtil
             .rewriteMinecraftBrand(packet, server.getVersion(), player.getProtocolVersion()));
       } else {
         if (serverConn.getPhase() == BackendConnectionPhases.IN_TRANSITION) {
@@ -204,7 +215,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
           } else {
             ChannelIdentifier id = server.getChannelRegistrar().getFromId(packet.getChannel());
             if (id == null) {
-              backendConn.write(packet.retain());
+              backendConn.delayedWrite(packet.retain());
             } else {
               byte[] copy = ByteBufUtil.getBytes(packet.content());
               PluginMessageEvent event = new PluginMessageEvent(player, serverConn, id,
@@ -212,7 +223,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
               server.getEventManager().fire(event).thenAcceptAsync(pme -> {
                 PluginMessage message = new PluginMessage(packet.getChannel(),
                     Unpooled.wrappedBuffer(copy));
-                backendConn.write(message);
+                backendConn.writeImmediately(message);
               }, backendConn.eventLoop());
             }
           }
@@ -243,7 +254,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       if (packet instanceof PluginMessage) {
         ((PluginMessage) packet).retain();
       }
-      smc.write(packet);
+      smc.delayedWrite(packet);
     }
   }
 
@@ -257,7 +268,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
 
     MinecraftConnection smc = serverConnection.getConnection();
     if (smc != null && serverConnection.getPhase().consideredComplete()) {
-      smc.write(buf.retain());
+      smc.delayedWrite(buf.retain());
     }
   }
 
@@ -364,7 +375,6 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     return serverBossBars;
   }
 
-
   private boolean handleCommandTabComplete(TabCompleteRequest packet) {
     // In 1.13+, we need to do additional work for the richer suggestions available.
     String command = packet.getCommand().substring(1);
@@ -413,7 +423,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
     resp.setLength(length);
     resp.getOffers().addAll(offers);
 
-    player.getConnection().write(resp);
+    player.getConnection().writeImmediately(resp);
     return true;
   }
 
@@ -453,7 +463,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
         response.getOffers().add(new Offer(offer, null));
       }
       response.getOffers().sort(null);
-      player.getConnection().write(response);
+      player.getConnection().delayedWrite(response);
     } catch (Exception e) {
       logger.error("Unable to provide tab list completions for {} for command '{}'",
           player.getUsername(),
@@ -472,7 +482,7 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
           for (String s : e.getSuggestions()) {
             response.getOffers().add(new Offer(s));
           }
-          player.getConnection().write(response);
+          player.getConnection().writeImmediately(response);
         }, player.getConnection().eventLoop());
   }
 
@@ -486,8 +496,9 @@ public class ClientPlaySessionHandler implements MinecraftSessionHandler {
       if (connection != null) {
         PluginMessage pm;
         while ((pm = loginPluginMessages.poll()) != null) {
-          connection.write(pm);
+          connection.delayedWrite(pm);
         }
+        connection.flush();
       }
     }
   }

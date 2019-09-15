@@ -125,6 +125,16 @@ public class MinecraftConnection extends ChannelInboundHandlerAdapter {
   }
 
   @Override
+  public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    if (sessionHandler == null) {
+      // No session handler available, do nothing
+      return;
+    }
+
+    sessionHandler.readCompleted();
+  }
+
+  @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     if (ctx.channel().isActive()) {
       if (sessionHandler != null) {
@@ -165,9 +175,9 @@ public class MinecraftConnection extends ChannelInboundHandlerAdapter {
 
   /**
    * Writes and immediately flushes a message to the connection.
-   * @param msg the message to write
+   * @param msg the message to delayedWrite
    */
-  public void write(Object msg) {
+  public void writeImmediately(Object msg) {
     if (channel.isActive()) {
       channel.writeAndFlush(msg, channel.voidPromise());
     }
@@ -175,7 +185,7 @@ public class MinecraftConnection extends ChannelInboundHandlerAdapter {
 
   /**
    * Writes, but does not flush, a message to the connection.
-   * @param msg the message to write
+   * @param msg the message to delayedWrite
    */
   public void delayedWrite(Object msg) {
     if (channel.isActive()) {
@@ -194,7 +204,7 @@ public class MinecraftConnection extends ChannelInboundHandlerAdapter {
 
   /**
    * Closes the connection after writing the {@code msg}.
-   * @param msg the message to write
+   * @param msg the message to delayedWrite
    */
   public void closeWith(Object msg) {
     if (channel.isActive()) {

@@ -22,7 +22,6 @@ import com.velocitypowered.proxy.server.VelocityRegisteredServer;
 import io.netty.buffer.ByteBuf;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -145,7 +144,7 @@ public class StatusSessionHandler implements MinecraftSessionHandler {
             (event) -> {
               StringBuilder json = new StringBuilder();
               VelocityServer.GSON.toJson(event.getPing(), json);
-              connection.write(new StatusResponse(json));
+              connection.writeImmediately(new StatusResponse(json));
             },
             connection.eventLoop());
     return true;

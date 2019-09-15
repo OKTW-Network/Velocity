@@ -60,11 +60,11 @@ public class LoginSessionHandler implements MinecraftSessionHandler {
           serverConn.getPlayer().getRemoteAddress().getHostString(),
           serverConn.getPlayer().getGameProfile());
       LoginPluginResponse response = new LoginPluginResponse(packet.getId(), true, forwardingData);
-      mc.write(response);
+      mc.writeImmediately(response);
       informationForwarded = true;
     } else {
       // Don't understand
-      mc.write(new LoginPluginResponse(packet.getId(), false, Unpooled.EMPTY_BUFFER));
+      mc.writeImmediately(new LoginPluginResponse(packet.getId(), false, Unpooled.EMPTY_BUFFER));
     }
     return true;
   }

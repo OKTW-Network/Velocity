@@ -114,7 +114,7 @@ public enum LegacyForgeHandshakeBackendPhase implements BackendConnectionPhase {
       serverConnection.setConnectionPhase(newPhase);
 
       // Write the packet to the player, we don't need it now.
-      player.getConnection().write(message.retain());
+      player.getConnection().writeImmediately(message.retain());
       return true;
     }
 

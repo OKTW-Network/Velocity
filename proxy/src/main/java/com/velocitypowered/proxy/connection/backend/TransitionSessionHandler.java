@@ -59,7 +59,7 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
 
   @Override
   public boolean handle(KeepAlive packet) {
-    serverConn.ensureConnected().write(packet);
+    serverConn.ensureConnected().writeImmediately(packet);
     return true;
   }
 
@@ -167,7 +167,7 @@ public class TransitionSessionHandler implements MinecraftSessionHandler {
       return true;
     }
 
-    serverConn.getPlayer().getConnection().write(packet.retain());
+    serverConn.getPlayer().getConnection().writeImmediately(packet.retain());
     return true;
   }
 

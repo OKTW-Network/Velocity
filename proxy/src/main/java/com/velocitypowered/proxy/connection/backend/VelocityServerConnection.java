@@ -3,8 +3,6 @@ package com.velocitypowered.proxy.connection.backend;
 import static com.velocitypowered.proxy.VelocityServer.GSON;
 import static com.velocitypowered.proxy.connection.forge.legacy.LegacyForgeConstants.HANDSHAKE_HOSTNAME_TOKEN;
 import static com.velocitypowered.proxy.network.Connections.FLOW_HANDLER;
-import static com.velocitypowered.proxy.network.Connections.FLUSH_CONSOLIDATION;
-import static com.velocitypowered.proxy.network.Connections.FLUSH_CONSOLIDATION_AMOUNT;
 import static com.velocitypowered.proxy.network.Connections.FRAME_DECODER;
 import static com.velocitypowered.proxy.network.Connections.FRAME_ENCODER;
 import static com.velocitypowered.proxy.network.Connections.HANDLER;
@@ -216,7 +214,7 @@ public class VelocityServerConnection implements MinecraftConnectionAssociation,
     MinecraftConnection mc = ensureConnected();
 
     PluginMessage message = new PluginMessage(identifier.getId(), Unpooled.wrappedBuffer(data));
-    mc.write(message);
+    mc.writeImmediately(message);
     return true;
   }
 

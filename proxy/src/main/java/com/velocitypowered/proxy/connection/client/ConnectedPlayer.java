@@ -216,7 +216,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
         TitlePacket pkt = new TitlePacket();
         pkt.setAction(TitlePacket.SET_ACTION_BAR);
         pkt.setComponent(GsonComponentSerializer.INSTANCE.serialize(component));
-        connection.write(pkt);
+        connection.writeImmediately(pkt);
         return;
       } else {
         // Due to issues with action bar packets, we'll need to convert the text message into a
@@ -232,7 +232,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
     Chat chat = new Chat();
     chat.setType(pos);
     chat.setMessage(json);
-    connection.write(chat);
+    connection.writeImmediately(chat);
   }
 
   @Override
@@ -278,9 +278,9 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
 
     ProtocolVersion protocolVersion = connection.getProtocolVersion();
     if (title.equals(Titles.reset())) {
-      connection.write(TitlePacket.resetForProtocolVersion(protocolVersion));
+      connection.writeImmediately(TitlePacket.resetForProtocolVersion(protocolVersion));
     } else if (title.equals(Titles.hide())) {
-      connection.write(TitlePacket.hideForProtocolVersion(protocolVersion));
+      connection.writeImmediately(TitlePacket.hideForProtocolVersion(protocolVersion));
     } else if (title instanceof TextTitle) {
       TextTitle tt = (TextTitle) title;
 
@@ -590,7 +590,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
     Preconditions.checkNotNull(identifier, "identifier");
     Preconditions.checkNotNull(data, "data");
     PluginMessage message = new PluginMessage(identifier.getId(), Unpooled.wrappedBuffer(data));
-    connection.write(message);
+    connection.writeImmediately(message);
     return true;
   }
 
@@ -599,7 +599,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
     Preconditions.checkArgument(input.length() <= Chat.MAX_SERVERBOUND_MESSAGE_LENGTH,
         "input cannot be greater than " + Chat.MAX_SERVERBOUND_MESSAGE_LENGTH
             + " characters in length");
-    ensureBackendConnection().write(Chat.createServerbound(input));
+    ensureBackendConnection().writeImmediately(Chat.createServerbound(input));
   }
 
   @Override
@@ -609,7 +609,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
     ResourcePackRequest request = new ResourcePackRequest();
     request.setUrl(url);
     request.setHash("");
-    connection.write(request);
+    connection.writeImmediately(request);
   }
 
   @Override
@@ -621,7 +621,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
     ResourcePackRequest request = new ResourcePackRequest();
     request.setUrl(url);
     request.setHash(ByteBufUtil.hexDump(hash));
-    connection.write(request);
+    connection.writeImmediately(request);
   }
 
   /**
@@ -633,7 +633,7 @@ public class ConnectedPlayer implements MinecraftConnectionAssociation, Player {
     if (connection.getState() == StateRegistry.PLAY) {
       KeepAlive keepAlive = new KeepAlive();
       keepAlive.setRandomId(ThreadLocalRandom.current().nextLong());
-      connection.write(keepAlive);
+      connection.writeImmediately(keepAlive);
     }
   }
 
